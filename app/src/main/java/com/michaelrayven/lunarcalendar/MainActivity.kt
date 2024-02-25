@@ -54,13 +54,13 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             val scope = rememberCoroutineScope()
-            var widgetScheduledUpdateWorkInfo by remember {
-                mutableStateOf<WorkInfo?>(null)
-            }
-            val widgetSingleUpdateRequest = OneTimeWorkRequestBuilder<WidgetUpdateWorker>().build()
+            var widgetScheduledUpdateWorkInfo by remember { mutableStateOf<WorkInfo?>(null) }
+
+            val sharedPref = getSharedPreferences(getString(R.string.preference_file), Context.MODE_PRIVATE)
 
             LaunchedEffect(key1 = true) {
                 launch {
+                    scheduleWidgetUpdates(applicationContext)
                     widgetScheduledUpdateWorkInfo = getScheduledWorkInfo(applicationContext)
                 }
             }
@@ -73,7 +73,14 @@ class MainActivity : ComponentActivity() {
                 ) {
 
                     TimeZoneDropdown("") {
+                        with (sharedPref.edit()) {
+                            putString(getString(R.string.saved_time_zone), it.id)
+                            apply()
+                        }
 
+                        scope.launch {
+                            updateWidget(applicationContext)
+                        }
                     }
                     
                     Column {
@@ -81,9 +88,9 @@ class MainActivity : ComponentActivity() {
                         Button(
                             modifier = Modifier.wrapContentSize(),
                             onClick = {
-                                WorkManager
-                                    .getInstance(applicationContext)
-                                    .enqueue(widgetSingleUpdateRequest)
+                                scope.launch {
+                                    updateWidget(applicationContext)
+                                }
                             }) {
                             Text(
                                 text = "Force Update Widget"
@@ -110,6 +117,16 @@ class MainActivity : ComponentActivity() {
     companion object {
         const val UPDATE_WIDGET_TAG = "update-widget"
     }
+}
+
+suspend fun updateWidget(context: Context) {
+    val widgetSingleUpdateRequest = OneTimeWorkRequestBuilder<WidgetUpdateWorker>().build()
+    val wordManager = WorkManager
+        .getInstance(context)
+
+    wordManager
+        .enqueue(widgetSingleUpdateRequest)
+        .await()
 }
 
 suspend fun scheduleWidgetUpdates(context: Context) {
@@ -150,7 +167,7 @@ suspend fun getScheduledWorkInfo(context: Context): WorkInfo? {
 @Composable
 fun TimeZoneDropdown(
     selected: String,
-    onChangeSelection: (String) -> Unit
+    onChangeSelection: (TimeZoneInfo) -> Unit
 ) {
     val timeZones = getTimeZones()
 
@@ -179,10 +196,10 @@ fun TimeZoneDropdown(
                 val filteredTimeZones = timeZones.filter { it.name.contains(selectedText, true) }
                 items(filteredTimeZones.size) {index ->
                     val item = filteredTimeZones[index]
-                    TimeZoneItem(item.name) { name ->
+                    TimeZoneItem(item) { tz ->
                         expanded = false
-                        selectedText = name
-                        onChangeSelection(name)
+                        selectedText = tz.name
+                        onChangeSelection(tz)
                     }
                 }
             }
@@ -191,13 +208,13 @@ fun TimeZoneDropdown(
 }
 
 @Composable
-fun TimeZoneItem(name: String, onClick: (String) -> Unit) {
+fun TimeZoneItem(tz: TimeZoneInfo, onClick: (TimeZoneInfo) -> Unit) {
     DropdownMenuItem(text = {
         Text(
-            text = name,
+            text = tz.name,
             fontSize = 16.sp,
         )
-    }, onClick = { onClick(name) })
+    }, onClick = { onClick(tz) })
 }
 
 fun getTimeZones(): List<TimeZoneInfo> {
@@ -211,6 +228,9 @@ fun getTimeZones(): List<TimeZoneInfo> {
 
         if (name.contains("etc", true)) return@map null
 
-        TimeZoneInfo(name)
+        TimeZoneInfo(
+            name = name,
+            id = id
+        )
     }.filterNotNull()
 }

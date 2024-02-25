@@ -12,6 +12,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
+import androidx.glance.action.actionStartActivity
+import androidx.glance.action.clickable
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.cornerRadius
 import androidx.glance.appwidget.lazy.LazyColumn
@@ -21,17 +23,21 @@ import androidx.glance.layout.Alignment
 import androidx.glance.layout.Box
 import androidx.glance.layout.Row
 import androidx.glance.layout.Spacer
+import androidx.glance.layout.fillMaxHeight
 import androidx.glance.layout.fillMaxSize
 import androidx.glance.layout.fillMaxWidth
 import androidx.glance.layout.height
 import androidx.glance.layout.padding
 import androidx.glance.layout.wrapContentHeight
 import androidx.glance.layout.wrapContentSize
+import androidx.glance.layout.wrapContentWidth
 import androidx.glance.text.FontFamily
 import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
+import com.michaelrayven.lunarcalendar.MainActivity
+import com.michaelrayven.lunarcalendar.R
 import com.michaelrayven.lunarcalendar.remote.AppClient
 import com.michaelrayven.lunarcalendar.types.LunarDay
 import kotlinx.coroutines.launch
@@ -39,20 +45,26 @@ import kotlinx.coroutines.launch
 class CalendarWidget : GlanceAppWidget() {
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
+        val sharedPref = context.getSharedPreferences(context.getString(R.string.preference_file), Context.MODE_PRIVATE)
+        val timeZone = sharedPref.getString(context.getString(R.string.saved_time_zone), "Asia/Novosibirsk")
 
         provideContent {
             var data by remember { mutableStateOf<List<LunarDay>?>(null) }
 
             LaunchedEffect(key1 = true) {
                 launch {
-                    data = AppClient().fetchData()
+                    data = AppClient().fetchData(timeZone ?: "Asia/Novosibirsk")
                 }
             }
 
-            if ((data != null) && ((data?.size ?: 0) >= 2)) {
-                WidgetContent(data!![1])
-            } else {
-                LoadingContent()
+            Box(
+                modifier = GlanceModifier.background(Color.DarkGray).clickable(actionStartActivity<MainActivity>()),
+            ) {
+                if ((data != null) && ((data?.size ?: 0) >= 2)) {
+                    WidgetContent(data!![1])
+                } else {
+                    LoadingContent()
+                }
             }
         }
     }
@@ -69,7 +81,7 @@ class CalendarWidget : GlanceAppWidget() {
                 style = TextStyle(
                     color = ColorProvider(Color.White),
                     fontWeight = FontWeight.Bold,
-                    fontFamily = FontFamily.Serif,
+                    fontFamily = FontFamily.SansSerif,
                     fontSize = 26.sp
                 )
             )
@@ -79,7 +91,7 @@ class CalendarWidget : GlanceAppWidget() {
     @Composable
     private fun WidgetContent(data: LunarDay) {
         Row(
-            modifier = GlanceModifier.fillMaxSize().background(Color.DarkGray),
+            modifier = GlanceModifier.fillMaxSize(),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
@@ -101,7 +113,8 @@ class CalendarWidget : GlanceAppWidget() {
                     CalendarItem(
                         modifier = GlanceModifier
                             .fillMaxWidth()
-                            .background(if (i % 2 == 0) Color.Gray else Color.Gray.copy(alpha = 0.7f)),
+                            .wrapContentHeight()
+                            .background(if (i % 2 == 0) Color.Gray else Color.Gray.copy(alpha = 0.6f)),
                         time = data.timeData[i].time,
                         data = data.timeData[i].data
                     )
@@ -116,7 +129,7 @@ class CalendarWidget : GlanceAppWidget() {
     @Composable
     private fun CalendarItem(modifier: GlanceModifier, time: String, data: String) {
         Row(
-            modifier = modifier.wrapContentHeight().cornerRadius(4.dp),
+            modifier = modifier.cornerRadius(4.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
@@ -125,13 +138,13 @@ class CalendarWidget : GlanceAppWidget() {
                 style = TextStyle(
                     color = ColorProvider(Color.White),
                     fontWeight = FontWeight.Bold,
-                    fontFamily = FontFamily.Monospace,
+                    fontFamily = FontFamily.SansSerif,
                     fontSize = 20.sp
                 )
             )
             Text(
                 text = data,
-                modifier = GlanceModifier.padding(4.dp).fillMaxWidth().wrapContentHeight() ,
+                modifier = GlanceModifier.padding(4.dp).wrapContentSize(),
                 style = TextStyle(
                     color = ColorProvider(Color.White),
                     fontWeight = FontWeight.Bold,

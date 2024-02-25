@@ -19,7 +19,7 @@ import java.util.Calendar
 
 class AppClient {
 
-    suspend fun fetchData(): List<LunarDay> {
+    suspend fun fetchData(timeZone: String): List<LunarDay> {
         val client = HttpClient(Android) {
             install(Logging) {
                 logger = Logger.DEFAULT
@@ -36,7 +36,7 @@ class AppClient {
             append("fh", "12")
             append("fmn", "0")
             append("ttz", "20")
-            append("tz", "Asia/Novosibirsk")
+            append("tz", timeZone)
             append("sb", "1")
         }
 
