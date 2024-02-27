@@ -46,26 +46,26 @@ class CalendarWidget : GlanceAppWidget() {
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         val sharedPref = context.getSharedPreferences(context.getString(R.string.preference_file), Context.MODE_PRIVATE)
-        val timeZone = sharedPref.getString(context.getString(R.string.saved_time_zone), "Asia/Novosibirsk")
+//        val timeZone = sharedPref.getString(context.getString(R.string.saved_time_zone), "Asia/Novosibirsk")
 
         provideContent {
-            var data by remember { mutableStateOf<List<LunarDay>?>(null) }
-
-            LaunchedEffect(key1 = true) {
-                launch {
-                    data = AppClient().fetchData(timeZone ?: "Asia/Novosibirsk")
-                }
-            }
-
-            Box(
-                modifier = GlanceModifier.background(Color.DarkGray).clickable(actionStartActivity<MainActivity>()),
-            ) {
-                if ((data != null) && ((data?.size ?: 0) >= 2)) {
-                    WidgetContent(data!![1])
-                } else {
-                    LoadingContent()
-                }
-            }
+//            var data by remember { mutableStateOf<List<LunarDay>?>(null) }
+//
+//            LaunchedEffect(key1 = true) {
+//                launch {
+//                    data = AppClient().fetchData(timeZone ?: "Asia/Novosibirsk")
+//                }
+//            }
+//
+//            Box(
+//                modifier = GlanceModifier.background(Color.DarkGray).clickable(actionStartActivity<MainActivity>()),
+//            ) {
+//                if ((data != null) && ((data?.size ?: 0) >= 2)) {
+//                    WidgetContent(data!![1])
+//                } else {
+//                    LoadingContent()
+//                }
+//            }
         }
     }
 
@@ -104,25 +104,25 @@ class CalendarWidget : GlanceAppWidget() {
                     fontSize = 26.sp
                 )
             )
-            LazyColumn(
-                modifier = GlanceModifier.fillMaxSize(),
-            ) {
-                items(
-                    count = data.timeData.size
-                ) { i ->
-                    CalendarItem(
-                        modifier = GlanceModifier
-                            .fillMaxWidth()
-                            .wrapContentHeight()
-                            .background(if (i % 2 == 0) Color.Gray else Color.Gray.copy(alpha = 0.6f)),
-                        time = data.timeData[i].time,
-                        data = data.timeData[i].data
-                    )
-                    Spacer(
-                        modifier = GlanceModifier.height(4.dp)
-                    )
-                }
-            }
+//            LazyColumn(
+//                modifier = GlanceModifier.fillMaxSize(),
+//            ) {
+//                items(
+//                    count = data.timeData.size
+//                ) { i ->
+//                    CalendarItem(
+//                        modifier = GlanceModifier
+//                            .fillMaxWidth()
+//                            .wrapContentHeight()
+//                            .background(if (i % 2 == 0) Color.Gray else Color.Gray.copy(alpha = 0.6f)),
+//                        time = data.timeData[i].time,
+//                        data = data.timeData[i].data
+//                    )
+//                    Spacer(
+//                        modifier = GlanceModifier.height(4.dp)
+//                    )
+//                }
+//            }
         }
     }
 

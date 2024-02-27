@@ -2,8 +2,19 @@ package com.michaelrayven.lunarcalendar.types
 
 data class LunarDay(
     val day: Int,
-    val month: String,
+    val month: Int,
     val year: Int,
-    val dayOfWeek: String,
-    val timeData: List<TimeData>
+    val hour: Int,
+    val minute: Int,
+    val imageUrl: String,
+    val lunarDay: Int,
+    val currentLunarPhase: String,
+    val sign: Sign?,
+    val period: String,
+    val sunrise: String,
+    val sunset: String,
+    val visibility: String,
+    val distance: String,
+    val nextPhases: List<Pair<String, String>>,
+    val location: Location
 )

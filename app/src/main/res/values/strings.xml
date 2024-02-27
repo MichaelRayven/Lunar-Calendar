@@ -1,5 +1,5 @@
 <resources>
     <string name="app_name">Lunar Calendar</string>
     <string name="preference_file">com.michaelrayven.lunarcalendar.app_settings</string>
-    <string name="saved_time_zone">time-zone</string>
+    <string name="saved_location">current_location</string>
 </resources>
