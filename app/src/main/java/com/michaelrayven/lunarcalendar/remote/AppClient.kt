@@ -1,7 +1,6 @@
 package com.michaelrayven.lunarcalendar.remote
 
 import android.util.Log
-import androidx.compose.ui.text.toLowerCase
 import com.michaelrayven.lunarcalendar.types.City
 import com.michaelrayven.lunarcalendar.types.Country
 import com.michaelrayven.lunarcalendar.types.Location
@@ -10,9 +9,7 @@ import com.michaelrayven.lunarcalendar.types.LunarDay
 import com.michaelrayven.lunarcalendar.types.Sign
 import com.michaelrayven.lunarcalendar.types.State
 import io.ktor.client.HttpClient
-import io.ktor.client.call.body
 import io.ktor.client.engine.android.Android
-import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.logging.DEFAULT
 import io.ktor.client.plugins.logging.LogLevel
 import io.ktor.client.plugins.logging.Logger
@@ -20,23 +17,17 @@ import io.ktor.client.plugins.logging.Logging
 import io.ktor.client.request.forms.submitForm
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.Parameters
-import io.ktor.serialization.kotlinx.json.json
 import it.skrape.core.htmlDocument
 import it.skrape.matchers.toBe
-import it.skrape.matchers.toBeNot
-import it.skrape.selects.attribute
 import it.skrape.selects.html5.a
 import it.skrape.selects.html5.option
 import it.skrape.selects.html5.span
-import it.skrape.selects.html5.tbody
 import it.skrape.selects.html5.td
 import it.skrape.selects.html5.tr
-import it.skrape.selects.text
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import java.util.Calendar
 import java.util.GregorianCalendar
-import java.util.Locale
 
 
 class AppClient {
@@ -135,7 +126,7 @@ class AppClient {
             Location(
                 latitude = response.latitude.toFloat(),
                 longitude = response.longitude.toFloat(),
-                gmt = response.gmt.toInt(),
+                gmt = response.gmt.toFloat(),
                 timeZone = response.timezone,
                 country = country,
                 state = state,
@@ -340,7 +331,7 @@ class AppClient {
             val dayData = parseDayData(html)
 
             LunarCalendar(
-                day = lunarDay,
+                currentDay = lunarDay,
                 calendar = dayData
             )
         } catch (e: Exception) {

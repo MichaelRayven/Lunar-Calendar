@@ -85,6 +85,7 @@ fun <T> DialogDropdownMenu(
         ) {
             MaterialTheme {
                 Surface(
+                    shadowElevation = 16.dp,
                     shape = RoundedCornerShape(12.dp),
                 ) {
                     val listState = rememberLazyListState()

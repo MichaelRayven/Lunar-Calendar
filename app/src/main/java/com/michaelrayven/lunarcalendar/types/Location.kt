@@ -6,7 +6,7 @@ import kotlinx.serialization.Serializable
 data class Location(
     val latitude: Float,
     val longitude: Float,
-    val gmt: Int,
+    val gmt: Float,
     val timeZone: String,
     val country: Country,
     val state: State,
@@ -21,7 +21,7 @@ data class Location(
             city = City("Москва", "524901"),
             latitude = 55.7522f,
             longitude = 37.6155f,
-            gmt = 3,
+            gmt = 3f,
             timeZone = "Europe/Moscow"
         )
     }

@@ -10,7 +10,7 @@ android {
 
     defaultConfig {
         applicationId = "com.michaelrayven.lunarcalendar"
-        minSdk = 24
+        minSdk = 26
         targetSdk = 34
         versionCode = 1
         versionName = "1.0"
@@ -67,8 +67,10 @@ dependencies {
     implementation("androidx.navigation:navigation-compose:$nav_version")
 
     // For AppWidgets support
-    implementation("androidx.glance:glance:1.1.0-alpha01")
-    implementation("androidx.glance:glance-appwidget:1.1.0-alpha01")
+    val glance_version = "1.1.0-alpha01"
+    implementation("androidx.glance:glance:$glance_version")
+    implementation("androidx.glance:glance-appwidget:$glance_version")
+    implementation("androidx.glance:glance-material3:$glance_version")
 
     // HTTP Client for kotlin
     val ktor_version = "2.3.8"
@@ -92,7 +94,7 @@ dependencies {
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.ui:ui-graphics")
     implementation("androidx.compose.ui:ui-tooling-preview")
-    implementation("androidx.compose.material3:material3")
+    implementation("androidx.compose.material3:material3:1.2.0")
     implementation("androidx.work:work-runtime-ktx:2.9.0")
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.1.5")

@@ -1,6 +1,11 @@
 package com.michaelrayven.lunarcalendar.ui.screens
 
 import android.content.Context
+import android.util.Log
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -11,14 +16,22 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentSize
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Divider
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.VerticalDivider
+import androidx.compose.material3.pulltorefresh.PullToRefreshContainer
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -28,68 +41,74 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
-import com.michaelrayven.lunarcalendar.R
-import com.michaelrayven.lunarcalendar.remote.AppClient
-import com.michaelrayven.lunarcalendar.types.Location
-import com.michaelrayven.lunarcalendar.types.LunarDay
+import com.michaelrayven.lunarcalendar.types.LunarCalendar
+import com.michaelrayven.lunarcalendar.types.Sign
 import com.michaelrayven.lunarcalendar.ui.components.LoadingSpinner
-import kotlinx.serialization.json.Json
-import java.util.Calendar
+import com.michaelrayven.lunarcalendar.util.formatGmt
+import com.michaelrayven.lunarcalendar.util.getCurrentLunarCalendar
+import com.michaelrayven.lunarcalendar.util.getSavedLocation
+import com.michaelrayven.lunarcalendar.work.WidgetUpdateWorker
+import java.util.Locale
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen() {
     val context = LocalContext.current
-    val preferencesFile = context.getString(R.string.preference_file)
-    val preferences = context.getSharedPreferences(preferencesFile, Context.MODE_PRIVATE)
-    val location = try {
-        Json.decodeFromString<Location>(
-            preferences.getString(context.getString(R.string.saved_location), null) ?: ""
-        )
-    } catch (e: IllegalArgumentException) {
-        Location.DEFAULT
-    }
+    val location = getSavedLocation(context)
 
-    var lunarDay by remember { mutableStateOf<LunarDay?>(null) }
+    var lunarCalendar by remember { mutableStateOf<LunarCalendar?>(null) }
     LaunchedEffect(location) {
-        val client = AppClient()
-        val calendar = Calendar.getInstance()
-        val day = calendar.get(Calendar.DAY_OF_MONTH)
-        val month = calendar.get(Calendar.MONTH) + 1
-        val year = calendar.get(Calendar.YEAR)
-        val hour = calendar.get(Calendar.HOUR_OF_DAY)
-        val minute = calendar.get(Calendar.MINUTE)
-
-        lunarDay = client.getLunarDay(location, day, month, year, hour, minute)
+        lunarCalendar = getCurrentLunarCalendar(context, location)
     }
 
-    if (lunarDay != null) {
-        LunarDayView(lunarDay = lunarDay!!)
-    } else {
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
-            Column(
-                modifier = Modifier.wrapContentSize(),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Text(
-                    modifier = Modifier.wrapContentSize(),
-                    style = MaterialTheme.typography.titleMedium,
-                    text = "Загрузка..."
-                )
-                Spacer(modifier = Modifier.height(16.dp))
-                LoadingSpinner(modifier = Modifier.size(48.dp))
+    LaunchedEffect(true) {
+        WidgetUpdateWorker.scheduleWidgetUpdates(context)
+    }
+
+    val state = rememberPullToRefreshState()
+    Box(Modifier.nestedScroll(state.nestedScrollConnection)) {
+        if (state.isRefreshing) {
+            LaunchedEffect(true) {
+                lunarCalendar = getCurrentLunarCalendar(context, location)
+                state.endRefresh()
             }
         }
+
+        if (lunarCalendar != null) {
+            LunarDayView(lunarCalendar = lunarCalendar!!)
+        } else {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(
+                    modifier = Modifier.wrapContentSize(),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        modifier = Modifier.wrapContentSize(),
+                        style = MaterialTheme.typography.titleMedium,
+                        text = "Загрузка..."
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    LoadingSpinner(modifier = Modifier.size(48.dp))
+                }
+            }
+        }
+
+        PullToRefreshContainer(
+            modifier = Modifier.align(Alignment.TopCenter),
+            state = state
+        )
     }
 }
 
@@ -114,7 +133,8 @@ private fun TableRow(title: String, data: String) {
 }
 
 @Composable
-fun LunarDayView(lunarDay: LunarDay) {
+fun LunarDayView(lunarCalendar: LunarCalendar) {
+    val lunarDay = lunarCalendar.currentDay
     Column(
         modifier = Modifier
             .verticalScroll(rememberScrollState())
@@ -132,7 +152,7 @@ fun LunarDayView(lunarDay: LunarDay) {
             modifier = Modifier.fillMaxWidth(),
             textAlign = TextAlign.Center,
             style = MaterialTheme.typography.headlineSmall,
-            text = lunarDay.location.displayName,
+            text = "${lunarDay.location.displayName} (${formatGmt(lunarDay.location.gmt)})",
             color = MaterialTheme.colorScheme.secondary
         )
 
@@ -165,7 +185,7 @@ fun LunarDayView(lunarDay: LunarDay) {
         TableRow("Фаза:", lunarDay.currentLunarPhase)
 
         if (lunarDay.sign != null) {
-            Divider(modifier = Modifier.padding(horizontal = 16.dp))
+            HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
 
             Row(
                 modifier = Modifier.fillMaxWidth()
@@ -194,42 +214,165 @@ fun LunarDayView(lunarDay: LunarDay) {
             }
         }
 
-        Divider(modifier = Modifier.padding(horizontal = 16.dp))
+        HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
 
-        TableRow("Период:", lunarDay!!.period)
+        TableRow("Период:", lunarDay.period)
 
-        Divider(modifier = Modifier.padding(horizontal = 16.dp))
+        HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
 
-        TableRow("Восход:", lunarDay!!.sunrise)
+        TableRow("Восход:", lunarDay.sunrise)
 
-        Divider(modifier = Modifier.padding(horizontal = 16.dp))
+        HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
 
-        TableRow("Закат:", lunarDay!!.sunset)
+        TableRow("Закат:", lunarDay.sunset)
 
-        Divider(modifier = Modifier.padding(horizontal = 16.dp))
+        HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
 
-        TableRow("Видимость:", lunarDay!!.visibility)
+        TableRow("Видимость:", lunarDay.visibility)
 
-        Divider(modifier = Modifier.padding(horizontal = 16.dp))
+        HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
 
-        TableRow("Расстояние:", lunarDay!!.distance)
+        TableRow("Расстояние:", lunarDay.distance)
 
-        lunarDay!!.nextPhases.map { (phase, data) ->
-            Divider(modifier = Modifier.padding(horizontal = 16.dp))
+        lunarDay.nextPhases.map { (phase, data) ->
+            HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
 
             TableRow(phase, data)
         }
+
+        TimeTable(data = lunarCalendar.calendar)
     }
 }
 
 
 @Composable
-fun TimeTable() {
+fun TimeTable(data: List<LunarCalendar.DayData>) {
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp)),
+        shadowElevation = 8.dp
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Text(
+                modifier = Modifier.fillMaxWidth(),
+                textAlign = TextAlign.Center,
+                style = MaterialTheme.typography.headlineMedium,
+                text = "Лунный календарь:\n${data.first().date} - ${data.last().date}"
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Row {
+                Text(
+                    modifier = Modifier.weight(.2f),
+                    text = "Дата",
+                    style = MaterialTheme.typography.titleMedium,
+                    textAlign = TextAlign.Center
+                )
+                VerticalDivider(
+                    modifier = Modifier.padding(vertical = 4.dp)
+                )
+                Text(
+                    modifier = Modifier.weight(.8f),
+                    text = "Лунный день, знак, Луна без курса, фаза",
+                    style = MaterialTheme.typography.titleMedium
+                )
+            }
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            HorizontalDivider()
+
+            data.mapIndexed { index, item ->
+                TimeTableRow(
+                    modifier = Modifier.background(
+                        if (index % 2 == 0) {
+                            Color.Gray.copy(.1f)
+                        } else {
+                            Color.Gray.copy(.2f)
+                        }
+                    ),
+                    data = item
+                )
+
+                if (index != data.lastIndex) {
+                    HorizontalDivider()
+                }
+            }
+        }
+    }
 
 }
 
-@Preview
 @Composable
-fun HomeScreenPreview() {
-    HomeScreen()
+fun TimeTableRow(modifier: Modifier = Modifier, data: LunarCalendar.DayData) {
+    Row(
+        modifier = modifier,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            modifier = Modifier.weight(.2f),
+            text = "${data.day}/${data.month}\n${data.year}",
+            textAlign = TextAlign.Center,
+            style = MaterialTheme.typography.titleMedium
+        )
+
+        Column(
+            modifier = Modifier.weight(.8f)
+        ) {
+            data.timeTable.mapIndexed { index, item ->
+                val signRegex = "[asdfghjklzxc]".toRegex(setOf(RegexOption.MULTILINE, RegexOption.IGNORE_CASE))
+                val signMatch = signRegex.find(item.data)
+                val sign = signMatch?.let { Sign.getByCharCode(it.value) }
+                val itemData = if (sign != null) {
+                    item.data.replace(sign.charCode + " ", "")
+                } else {
+                    item.data
+                }.replaceFirstChar { it.titlecase(Locale.ROOT) }
+
+                Row(
+                    modifier = Modifier
+                        .background(
+                            if (index % 2 == 0) {
+                                Color.Gray.copy(.075f)
+                            } else {
+                                Color.Gray.copy(.15f)
+                            }
+                        )
+                        .padding(vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(
+                        verticalArrangement = Arrangement.Center,
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            modifier = Modifier
+                                .wrapContentWidth()
+                                .padding(horizontal = 8.dp),
+                            text = item.time
+                        )
+                        if (sign != null) {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Image(
+                                modifier = Modifier.size(16.dp),
+                                painter = painterResource(sign.iconResId),
+                                contentDescription = sign.name
+                            )
+                        }
+                    }
+
+                    Text(
+                        modifier = Modifier.weight(1f),
+                        text = itemData
+                    )
+                }
+            }
+        }
+    }
 }
