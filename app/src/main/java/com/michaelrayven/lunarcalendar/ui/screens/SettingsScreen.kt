@@ -5,7 +5,6 @@ import android.content.SharedPreferences
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -21,7 +20,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -35,14 +33,14 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import androidx.navigation.NavController
 import androidx.work.await
 import com.michaelrayven.lunarcalendar.R
-import com.michaelrayven.lunarcalendar.ui.components.DialogDropdownMenu
+import com.michaelrayven.lunarcalendar.ui.components.ItemPicker
 import com.michaelrayven.lunarcalendar.ui.components.LoadingSpinner
 import com.michaelrayven.lunarcalendar.ui.components.LocationPicker
-import com.michaelrayven.lunarcalendar.ui.components.Picker
+import com.michaelrayven.lunarcalendar.ui.components.rememberItemPickerState
 import com.michaelrayven.lunarcalendar.ui.components.rememberLocationPickerState
-import com.michaelrayven.lunarcalendar.ui.components.rememberPickerState
 import com.michaelrayven.lunarcalendar.util.formatGmt
 import com.michaelrayven.lunarcalendar.util.formatInterval
 import com.michaelrayven.lunarcalendar.util.getSavedLocation
@@ -53,7 +51,10 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
 @Composable
-fun SettingsScreen(snackbarHostState: SnackbarHostState) {
+fun SettingsScreen(
+    navController: NavController,
+    snackbarHostState: SnackbarHostState
+) {
     val context = LocalContext.current
     val preferencesFile = context.getString(R.string.preference_file)
     val preferences = context.getSharedPreferences(preferencesFile, Context.MODE_PRIVATE)
@@ -61,14 +62,18 @@ fun SettingsScreen(snackbarHostState: SnackbarHostState) {
     val scope = rememberCoroutineScope()
 
     var location by remember { mutableStateOf(getSavedLocation(context)) }
-    val locationPickerState = rememberLocationPickerState(default = location)
+    val locationPickerState = rememberLocationPickerState()
 
     Column(
         modifier = Modifier
-            .fillMaxSize()
+            .fillMaxWidth()
             .verticalScroll(rememberScrollState())
-            .padding(16.dp)
+            .padding(horizontal = 16.dp)
     ) {
+        Spacer(
+            modifier = Modifier.height(16.dp)
+        )
+
         Text(
             modifier = Modifier.fillMaxWidth(),
             textAlign = TextAlign.Center,
@@ -96,30 +101,26 @@ fun SettingsScreen(snackbarHostState: SnackbarHostState) {
             color = MaterialTheme.colorScheme.secondary
         )
 
-        LocationPicker(
-            confirmButton = { shouldBeEnabled ->
-                Button(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 32.dp),
-                    onClick = {
-                        with(preferences.edit()) {
-                            putString(
-                                context.getString(R.string.saved_location),
-                                Json.encodeToString(locationPickerState.value)
-                            )
-                            apply()
-                        }
-                        location = locationPickerState.value
-                    },
-                    enabled = shouldBeEnabled
-                ) {
-                    Text(text = "Сохранить")
-                }
-            },
-            state = locationPickerState
-        )
+        LocationPicker(state = locationPickerState)
 
+        Button(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 32.dp),
+            onClick = {
+                with(preferences.edit()) {
+                    putString(
+                        context.getString(R.string.saved_location),
+                        Json.encodeToString(locationPickerState.value!!)
+                    )
+                    apply()
+                }
+                location = locationPickerState.value!!
+            },
+            enabled = locationPickerState.value != null
+        ) {
+            Text(text = "Сохранить")
+        }
 
 
         Spacer(
@@ -139,7 +140,17 @@ fun SettingsScreen(snackbarHostState: SnackbarHostState) {
         IntervalPicker(preferences, context)
 
         Spacer(
-            modifier = Modifier.height(8.dp)
+            modifier = Modifier.height(16.dp)
+        )
+
+        Text(
+            text = "Обновление виджетов вручную:",
+            fontWeight = FontWeight.Bold,
+            fontSize = 18.sp
+        )
+
+        Spacer(
+            modifier = Modifier.height(16.dp)
         )
 
         var updatingWidgets by remember { mutableStateOf(false) }
@@ -218,10 +229,10 @@ private fun IntervalPicker(
                             .padding(8.dp)
                     ) {
                         val hourValues = (0..23).map { it.toString().padStart(2, '0') }
-                        val hourPickerState = rememberPickerState("00")
+                        val hourPickerState = rememberItemPickerState("00")
 
                         val minuteValues = (0..59).map { it.toString().padStart(2, '0') }
-                        val minutePickerState = rememberPickerState("00")
+                        val minutePickerState = rememberItemPickerState("00")
 
                         Text(
                             modifier = Modifier.fillMaxWidth(),
@@ -231,7 +242,7 @@ private fun IntervalPicker(
 
                         Text(
                             modifier = Modifier.fillMaxWidth(),
-                            text = "Новый интервал: ${formatInterval("${hourPickerState.selectedItem}:${minutePickerState.selectedItem}")}",
+                            text = "Новый интервал: ${formatInterval("${hourPickerState.value}:${minutePickerState.value}")}",
                             color = MaterialTheme.colorScheme.secondary
                         )
 
@@ -249,7 +260,7 @@ private fun IntervalPicker(
                                 Text(
                                     text = "Часы"
                                 )
-                                Picker(
+                                ItemPicker(
                                     state = hourPickerState,
                                     items = hourValues,
                                     modifier = Modifier.fillMaxWidth(),
@@ -265,7 +276,7 @@ private fun IntervalPicker(
                                 Text(
                                     text = "Минуты"
                                 )
-                                Picker(
+                                ItemPicker(
                                     state = minutePickerState,
                                     items = minuteValues,
                                     modifier = Modifier.fillMaxWidth(),
@@ -287,7 +298,7 @@ private fun IntervalPicker(
                                 with(preferences.edit()) {
                                     putString(
                                         context.getString(R.string.saved_update_interval),
-                                        "${hourPickerState.selectedItem}:${minutePickerState.selectedItem}"
+                                        "${hourPickerState.value}:${minutePickerState.value}"
                                     )
                                     apply()
                                 }

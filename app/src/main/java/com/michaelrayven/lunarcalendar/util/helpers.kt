@@ -25,6 +25,19 @@ fun getSavedLocation(context: Context): Location {
     }
 }
 
+fun parseLocationOrSaved(context: Context, key: String? = ""): Location {
+    val preferencesFile = context.getString(R.string.preference_file)
+    val preferences = context.getSharedPreferences(preferencesFile, Context.MODE_PRIVATE)
+
+    return try {
+        Json.decodeFromString<Location>(
+            preferences.getString(key, null) ?: ""
+        )
+    } catch (e: IllegalArgumentException) {
+        getSavedLocation(context)
+    }
+}
+
 fun formatGmt(gmt: Float): String {
     val format = DecimalFormat("0.#")
 
@@ -45,11 +58,14 @@ fun formatInterval(interval: String): String {
     }
 }
 
-suspend fun getCurrentLunarCalendar(location: Location): LunarCalendar? {
+suspend fun getCurrentLunarCalendar(location: Location, timestamp: Long? = null): LunarCalendar? {
     val client = AppClient()
+    val calendar = Calendar.getInstance(TimeZone.getTimeZone(location.timeZone))
 
-    val calendar = Calendar.getInstance()
-    calendar.timeZone = TimeZone.getTimeZone(location.timeZone)
+    timestamp?.let {
+        calendar.timeZone = TimeZone.getDefault()
+        calendar.timeInMillis = timestamp
+    }
 
     val day = calendar.get(Calendar.DAY_OF_MONTH)
     val month = calendar.get(Calendar.MONTH) + 1

@@ -23,4 +23,5 @@ data class LunarDay(
     val location: Location
 ) {
     val date: String get() = "$day ${getMonthByNumber(month)}, $year г."
+    val time: String get() = "${hour.toString().padStart(2,'0')}:${minute.toString().padStart(2,'0')}"
 }

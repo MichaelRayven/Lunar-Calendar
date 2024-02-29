@@ -3,9 +3,7 @@ package com.michaelrayven.lunarcalendar.work
 import android.annotation.SuppressLint
 import android.content.Context
 import androidx.glance.appwidget.updateAll
-import androidx.work.Constraints
 import androidx.work.CoroutineWorker
-import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.Operation
 import androidx.work.PeriodicWorkRequestBuilder
