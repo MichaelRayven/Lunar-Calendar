@@ -1,5 +1,6 @@
 package com.michaelrayven.lunarcalendar.types
 
+import com.michaelrayven.lunarcalendar.util.getMonthByNumber
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -20,4 +21,6 @@ data class LunarDay(
     val distance: String,
     val nextPhases: List<Pair<String, String>>,
     val location: Location
-)
+) {
+    val date: String get() = "$day ${getMonthByNumber(month)}, $year г."
+}

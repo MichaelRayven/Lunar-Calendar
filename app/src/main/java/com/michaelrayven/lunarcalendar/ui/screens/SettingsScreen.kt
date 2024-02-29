@@ -11,26 +11,15 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentSize
-import androidx.compose.foundation.layout.wrapContentWidth
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
-import androidx.compose.material3.Divider
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SegmentedButton
-import androidx.compose.material3.SegmentedButtonDefaults
-import androidx.compose.material3.SingleChoiceSegmentedButtonRow
-import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -43,21 +32,16 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.work.await
 import com.michaelrayven.lunarcalendar.R
-import com.michaelrayven.lunarcalendar.remote.AppClient
-import com.michaelrayven.lunarcalendar.types.City
-import com.michaelrayven.lunarcalendar.types.Country
-import com.michaelrayven.lunarcalendar.types.Location
-import com.michaelrayven.lunarcalendar.types.State
 import com.michaelrayven.lunarcalendar.ui.components.DialogDropdownMenu
-import com.michaelrayven.lunarcalendar.ui.components.DialogDropdownMenuItem
 import com.michaelrayven.lunarcalendar.ui.components.LoadingSpinner
+import com.michaelrayven.lunarcalendar.ui.components.LocationPicker
 import com.michaelrayven.lunarcalendar.ui.components.Picker
+import com.michaelrayven.lunarcalendar.ui.components.rememberLocationPickerState
 import com.michaelrayven.lunarcalendar.ui.components.rememberPickerState
 import com.michaelrayven.lunarcalendar.util.formatGmt
 import com.michaelrayven.lunarcalendar.util.formatInterval
@@ -74,50 +58,10 @@ fun SettingsScreen(snackbarHostState: SnackbarHostState) {
     val preferencesFile = context.getString(R.string.preference_file)
     val preferences = context.getSharedPreferences(preferencesFile, Context.MODE_PRIVATE)
 
-    val client = AppClient()
     val scope = rememberCoroutineScope()
 
-    // Dropdown variables
-    var statesList by remember { mutableStateOf(emptyList<State>()) }
-    var citiesList by remember { mutableStateOf(emptyList<City>()) }
-
-    var selectedCountry by remember { mutableStateOf<Country?>(null) }
-    var selectedState by remember { mutableStateOf<State?>(null) }
-    var selectedCity by remember { mutableStateOf<City?>(null) }
-    var selectedLocation by remember { mutableStateOf(getSavedLocation(context)) }
-
-    var selectedCountryIndex by remember { mutableIntStateOf(-1) }
-    var selectedStateIndex by remember { mutableIntStateOf(-1) }
-    var selectedCityIndex by remember { mutableIntStateOf(-1) }
-
-    // Dropdown actions
-    LaunchedEffect(key1 = selectedCountry) {
-        launch {
-            val fetchedStates = selectedCountry?.let { client.getStates(it) }
-            fetchedStates?.let { statesList = it }
-        }
-    }
-
-    LaunchedEffect(key1 = selectedState) {
-        launch {
-            val fetchedCities = selectedState?.let { client.getCities(it) }
-            fetchedCities?.let { citiesList = it }
-        }
-    }
-
-    LaunchedEffect(key1 = selectedCity) {
-        launch {
-            if (selectedCity != null && selectedState != null && selectedCountry != null) {
-                val fetchedLocation = client.getLocation(
-                    selectedCity!!,
-                    selectedState!!,
-                    selectedCountry!!
-                )
-                fetchedLocation?.let { selectedLocation = it }
-            }
-
-        }
-    }
+    var location = getSavedLocation(context)
+    val locationPickerState = rememberLocationPickerState(default = location)
 
     Column(
         modifier = Modifier
@@ -148,91 +92,40 @@ fun SettingsScreen(snackbarHostState: SnackbarHostState) {
 
         Text(
             modifier = Modifier.fillMaxWidth(),
-            text = "Текущая локация: ${selectedLocation.displayName} (${formatGmt(selectedLocation.gmt)})",
+            text = "Текущая локация: ${location.displayName} (${formatGmt(location.gmt)})",
             color = MaterialTheme.colorScheme.secondary
         )
 
-        DialogDropdownMenu(
-            modifier = Modifier
-                .fillMaxWidth()
-            ,
-            label = "Выберете страну...",
-            items = Country.COUNTRY_LIST.map { it.name },
-            selectedIndex = selectedCountryIndex,
-            onItemSelected = { index, _ ->
-                if (index != selectedCountryIndex) {
-                    selectedCountryIndex = index
-                    selectedStateIndex = -1
-                    selectedCityIndex = -1
-                    selectedCountry = Country.COUNTRY_LIST.getOrNull(index)
-                }
-            }
-        )
-
-        Spacer(
-            modifier = Modifier.height(16.dp)
-        )
-
-        DialogDropdownMenu(
-            modifier = Modifier
-                .fillMaxWidth(),
-            label = "Выберете регион...",
-            items = statesList.map { it.name },
-            selectedIndex = selectedStateIndex,
-            onItemSelected = { index, _ ->
-                if (index != selectedStateIndex) {
-                    selectedStateIndex = index
-                    selectedCityIndex = -1
-                    selectedState = statesList.getOrNull(index)
+        LocationPicker(
+            confirmButton = { shouldBeEnabled ->
+                Button(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 32.dp),
+                    onClick = {
+                        with(preferences.edit()) {
+                            putString(
+                                context.getString(R.string.saved_location),
+                                Json.encodeToString(locationPickerState.value)
+                            )
+                            apply()
+                        }
+                        location = locationPickerState.value
+                    },
+                    enabled = shouldBeEnabled
+                ) {
+                    Text(text = "Сохранить")
                 }
             },
-            enabled = selectedCountry != null
+            state = locationPickerState
         )
+
+
 
         Spacer(
             modifier = Modifier.height(16.dp)
         )
 
-        DialogDropdownMenu(
-            modifier = Modifier
-                .fillMaxWidth(),
-            label = "Выберете город...",
-            items = citiesList.map { it.name },
-            selectedIndex = selectedCityIndex,
-            onItemSelected = { index, _ ->
-                if (index != selectedCityIndex) {
-                    selectedCityIndex = index
-                    selectedCity = citiesList.getOrNull(index)
-                }
-            },
-            enabled = selectedState != null
-        )
-
-        Spacer(
-            modifier = Modifier.height(16.dp)
-        )
-
-        Button(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 32.dp),
-            onClick = {
-                with(preferences.edit()) {
-                    putString(context.getString(R.string.saved_location), Json.encodeToString(
-                        selectedLocation
-                    ))
-                    apply()
-                }
-            },
-            enabled = selectedCity != null
-        ) {
-            Text(text = "Сохранить")
-        }
-
-        Spacer(
-            modifier = Modifier.height(16.dp)
-        )
-        
         Text(
             modifier = Modifier.fillMaxWidth(),
             style = MaterialTheme.typography.headlineSmall,
@@ -243,7 +136,8 @@ fun SettingsScreen(snackbarHostState: SnackbarHostState) {
             modifier = Modifier.height(24.dp)
         )
 
-        val timeOptions = listOf("Системное", "${selectedLocation.city.name}, (${formatGmt(selectedLocation.gmt)})")
+        val timeOptions =
+            listOf("Системное", "${location.city.name}, (${formatGmt(location.gmt)})")
         var selectedTimeIndex by remember { mutableIntStateOf(0) }
 
         DialogDropdownMenu(
@@ -302,7 +196,8 @@ private fun IntervalPicker(
     preferences: SharedPreferences,
     context: Context
 ) {
-    val interval = preferences.getString(context.getString(R.string.saved_update_interval), null) ?: "00:00"
+    val interval =
+        preferences.getString(context.getString(R.string.saved_update_interval), null) ?: "00:00"
     var expanded by remember { mutableStateOf(false) }
 
 
@@ -416,7 +311,10 @@ private fun IntervalPicker(
                                 .padding(horizontal = 32.dp),
                             onClick = {
                                 with(preferences.edit()) {
-                                    putString(context.getString(R.string.saved_update_interval), "${hourPickerState.selectedItem}:${minutePickerState.selectedItem}")
+                                    putString(
+                                        context.getString(R.string.saved_update_interval),
+                                        "${hourPickerState.selectedItem}:${minutePickerState.selectedItem}"
+                                    )
                                     apply()
                                 }
                                 WidgetUpdateWorker.scheduleWidgetUpdates(context)

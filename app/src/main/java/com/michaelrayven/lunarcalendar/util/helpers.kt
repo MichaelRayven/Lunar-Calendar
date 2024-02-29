@@ -5,9 +5,11 @@ import com.michaelrayven.lunarcalendar.R
 import com.michaelrayven.lunarcalendar.remote.AppClient
 import com.michaelrayven.lunarcalendar.types.Location
 import com.michaelrayven.lunarcalendar.types.LunarCalendar
+import com.michaelrayven.lunarcalendar.types.Sign
 import kotlinx.serialization.json.Json
 import java.text.DecimalFormat
 import java.util.Calendar
+import java.util.Locale
 import java.util.TimeZone
 
 fun getSavedLocation(context: Context): Location {
@@ -96,4 +98,17 @@ fun getMonthByNumber(number: Int): String {
         12 -> "Декабря"
         else -> throw Exception("Invalid month number")
     }
+}
+
+fun extractSign(text: String): Pair<String, Sign?> {
+    val signRegex = "[asdfghjklzxc]".toRegex(setOf(RegexOption.MULTILINE, RegexOption.IGNORE_CASE))
+    val signMatch = signRegex.find(text)
+    val sign = signMatch?.let { Sign.getByCharCode(it.value) }
+    val newText = if (sign != null) {
+        text.replace(sign.charCode + " ", "")
+    } else {
+        text
+    }.replaceFirstChar { it.titlecase(Locale.ROOT) }
+
+    return Pair(newText, sign)
 }

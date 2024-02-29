@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.Divider
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.Text
@@ -100,14 +101,14 @@ fun Picker(
             }
         }
 
-        Divider(
-            color = dividerColor,
-            modifier = Modifier.offset(y = itemHeightDp * visibleItemsMiddle)
+        HorizontalDivider(
+            modifier = Modifier.offset(y = itemHeightDp * visibleItemsMiddle),
+            color = dividerColor
         )
 
-        Divider(
-            color = dividerColor,
-            modifier = Modifier.offset(y = itemHeightDp * (visibleItemsMiddle + 1))
+        HorizontalDivider(
+            modifier = Modifier.offset(y = itemHeightDp * (visibleItemsMiddle + 1)),
+            color = dividerColor
         )
 
     }
