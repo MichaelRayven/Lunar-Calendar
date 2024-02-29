@@ -4,6 +4,13 @@ Attention! This app supports only Russian locale due to API limitations.
 A lunar calendar is a calendar based on the monthly cycles of the Moon's phases. 
 This app shows information about the current moon phase, lunar day, moonrise and moonset times, moon zodiac sign, visibility and distance.
 
+Libraries:
+- Jetpack Compose (UI Toolkit)
+- Material 3 (Design System)
+- Ktor (HTTP Client)
+- Glance (Compose for widgets)
+- Coil (Image loading)
+
 Features:
 - [X] Lunar calendar
 - [X] Widget for the calendar
