@@ -45,15 +45,11 @@ fun formatInterval(interval: String): String {
     }
 }
 
-suspend fun getCurrentLunarCalendar(context: Context, location: Location): LunarCalendar? {
+suspend fun getCurrentLunarCalendar(location: Location): LunarCalendar? {
     val client = AppClient()
-    val preferencesFile = context.getString(R.string.preference_file)
-    val preferences = context.getSharedPreferences(preferencesFile, Context.MODE_PRIVATE)
 
     val calendar = Calendar.getInstance()
-    if (preferences.getString(context.getString(R.string.saved_timezone), "system") == "local") {
-        calendar.timeZone = TimeZone.getTimeZone(location.timeZone)
-    }
+    calendar.timeZone = TimeZone.getTimeZone(location.timeZone)
 
     val day = calendar.get(Calendar.DAY_OF_MONTH)
     val month = calendar.get(Calendar.MONTH) + 1

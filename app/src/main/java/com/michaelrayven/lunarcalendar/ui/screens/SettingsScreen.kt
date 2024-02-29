@@ -133,33 +133,13 @@ fun SettingsScreen(snackbarHostState: SnackbarHostState) {
         )
 
         Spacer(
-            modifier = Modifier.height(24.dp)
+            modifier = Modifier.height(16.dp)
         )
 
-        val timeOptions =
-            listOf("Системное", "${location.city.name}, (${formatGmt(location.gmt)})")
-        var selectedTimeIndex by remember { mutableIntStateOf(0) }
-
-        DialogDropdownMenu(
-            modifier = Modifier.fillMaxWidth(),
-            label = "Используемое время...",
-            items = timeOptions,
-            selectedIndex = selectedTimeIndex,
-            onItemSelected = { index, _ ->
-                selectedTimeIndex = index
-                with(preferences.edit()) {
-                    if (index == 0) {
-                        putString(context.getString(R.string.saved_timezone), "system")
-                    } else {
-                        putString(context.getString(R.string.saved_timezone), "local")
-                    }
-                    apply()
-                }
-            }
-        )
+        IntervalPicker(preferences, context)
 
         Spacer(
-            modifier = Modifier.height(16.dp)
+            modifier = Modifier.height(8.dp)
         )
 
         var updatingWidgets by remember { mutableStateOf(false) }
@@ -182,12 +162,6 @@ fun SettingsScreen(snackbarHostState: SnackbarHostState) {
                 )
             }
         }
-
-        Spacer(
-            modifier = Modifier.height(16.dp)
-        )
-
-        IntervalPicker(preferences, context)
     }
 }
 

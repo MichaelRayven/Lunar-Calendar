@@ -74,7 +74,7 @@ class CalendarWidget : GlanceAppWidget() {
         provideContent {
             var lunarCalendar by remember { mutableStateOf<LunarCalendar?>(null) }
             LaunchedEffect(location) {
-                lunarCalendar = getCurrentLunarCalendar(context, location)
+                lunarCalendar = getCurrentLunarCalendar(location)
             }
 
             val size = LocalSize.current

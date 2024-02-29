@@ -8,6 +8,7 @@ import com.michaelrayven.lunarcalendar.types.LunarCalendar
 import com.michaelrayven.lunarcalendar.types.LunarDay
 import com.michaelrayven.lunarcalendar.types.Sign
 import com.michaelrayven.lunarcalendar.types.State
+import com.michaelrayven.lunarcalendar.util.getMonthByName
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.android.Android
 import io.ktor.client.plugins.logging.DEFAULT
@@ -385,26 +386,6 @@ class AppClient {
 
                 dayData
             }
-    }
-
-    private fun getMonthByName(
-        name: String
-    ): Int {
-        return when(name.lowercase()) {
-            "января" -> 1
-            "февраля" -> 2
-            "марта" -> 3
-            "апреля" -> 4
-            "мая" -> 5
-            "июня" -> 6
-            "июля" -> 7
-            "августа" -> 8
-            "сентября" -> 9
-            "октября" -> 10
-            "ноября" -> 11
-            "декабря" -> 12
-            else -> throw Exception("Invalid month name")
-        }
     }
 
     @Serializable
