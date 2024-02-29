@@ -1,13 +1,11 @@
 package com.michaelrayven.lunarcalendar.ui.screens
 
-import android.content.Context
-import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
@@ -16,47 +14,70 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerColors
+import androidx.compose.material3.DatePickerDefaults
+import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TimeInput
+import androidx.compose.material3.TimePicker
+import androidx.compose.material3.TimePickerState
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.material3.pulltorefresh.PullToRefreshContainer
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
+import androidx.compose.material3.rememberDatePickerState
+import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.DialogProperties
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import com.michaelrayven.lunarcalendar.R
 import com.michaelrayven.lunarcalendar.types.LunarCalendar
-import com.michaelrayven.lunarcalendar.types.Sign
+import com.michaelrayven.lunarcalendar.types.LunarDay
 import com.michaelrayven.lunarcalendar.ui.components.LoadingSpinner
+import com.michaelrayven.lunarcalendar.util.extractSign
 import com.michaelrayven.lunarcalendar.util.formatGmt
 import com.michaelrayven.lunarcalendar.util.getCurrentLunarCalendar
 import com.michaelrayven.lunarcalendar.util.getSavedLocation
 import com.michaelrayven.lunarcalendar.work.WidgetUpdateWorker
+import java.text.SimpleDateFormat
 import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -78,6 +99,7 @@ fun HomeScreen() {
     Box(Modifier.nestedScroll(state.nestedScrollConnection)) {
         if (state.isRefreshing) {
             LaunchedEffect(true) {
+                lunarCalendar = null
                 lunarCalendar = getCurrentLunarCalendar(context, location)
                 state.endRefresh()
             }
@@ -142,19 +164,7 @@ fun LunarDayView(lunarCalendar: LunarCalendar) {
             .fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text(
-            modifier = Modifier.fillMaxWidth(),
-            textAlign = TextAlign.Center,
-            style = MaterialTheme.typography.headlineLarge,
-            text = "Лунный календарь"
-        )
-        Text(
-            modifier = Modifier.fillMaxWidth(),
-            textAlign = TextAlign.Center,
-            style = MaterialTheme.typography.headlineSmall,
-            text = "${lunarDay.location.displayName} (${formatGmt(lunarDay.location.gmt)})",
-            color = MaterialTheme.colorScheme.secondary
-        )
+        CalendarHeader(lunarDay)
 
         Box(
             modifier = Modifier
@@ -244,6 +254,166 @@ fun LunarDayView(lunarCalendar: LunarCalendar) {
     }
 }
 
+@Composable
+private fun CalendarHeader(lunarDay: LunarDay) {
+    Column {
+        Text(
+            modifier = Modifier.fillMaxWidth(),
+            textAlign = TextAlign.Center,
+            style = MaterialTheme.typography.headlineLarge,
+            text = "Лунный календарь"
+        )
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+        ) {
+            Text(
+                textAlign = TextAlign.Center,
+                style = MaterialTheme.typography.titleLarge,
+                text = "на ${lunarDay.date}",
+            )
+            DateTimePicker()
+        }
+
+        Text(
+            modifier = Modifier.fillMaxWidth(),
+            textAlign = TextAlign.Center,
+            style = MaterialTheme.typography.titleMedium,
+            text = "${lunarDay.location.displayName} (${formatGmt(lunarDay.location.gmt)})",
+            color = MaterialTheme.colorScheme.secondary
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun DateTimePicker() {
+    val timePickerState = rememberTimePickerState()
+    val datePickerState = rememberDatePickerState()
+    val showDatePicker = rememberSaveable { mutableStateOf(false) }
+    val showTimePicker = rememberSaveable { mutableStateOf(false) }
+
+    IconButton(onClick = { showDatePicker.value = true }) {
+        Icon(imageVector = Icons.Filled.DateRange, contentDescription = "")
+    }
+
+    if (showDatePicker.value) {
+        DatePickerDialog(
+            onDismissRequest = { showDatePicker.value = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    showDatePicker.value = false
+                    showTimePicker.value = true
+                }) {
+                    Text("Ок")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDatePicker.value = false }) {
+                    Text("Отмена")
+                }
+            }
+        ) {
+            DatePicker(state = datePickerState)
+        }
+    }
+
+    if (showTimePicker.value) {
+        TimePickerDialog(
+            onDismissRequest = { showTimePicker.value = false },
+            confirmButton = {
+                TextButton(onClick = { showTimePicker.value = false }) {
+                    Text("Ок")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showTimePicker.value = false }) {
+                    Text("Отмена")
+                }
+            },
+            state = timePickerState
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun TimePickerDialog(
+    state: TimePickerState,
+    onDismissRequest: () -> Unit,
+    confirmButton: @Composable () -> Unit,
+    modifier: Modifier = Modifier,
+    dismissButton: @Composable (() -> Unit)? = null,
+    shape: Shape = DatePickerDefaults.shape,
+    tonalElevation: Dp = DatePickerDefaults.TonalElevation,
+    colors: DatePickerColors = DatePickerDefaults.colors(),
+    properties: DialogProperties = DialogProperties(usePlatformDefaultWidth = false),
+) {
+    val showingPicker = remember { mutableStateOf(true) }
+    val configuration = LocalConfiguration.current
+
+    DatePickerDialog(
+        onDismissRequest = onDismissRequest,
+        confirmButton = {
+            Row(
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                IconButton(
+                    modifier = Modifier.padding(start = 12.dp),
+                    onClick = { showingPicker.value = !showingPicker.value }
+                ) {
+                    val icon = if (showingPicker.value) {
+                        painterResource(id = R.drawable.baseline_keyboard_24)
+                    } else {
+                        painterResource(id = R.drawable.baseline_access_time_24)
+                    }
+                    Icon(
+                        painter = icon,
+                        contentDescription = if (showingPicker.value) {
+                            "Switch to Text Input"
+                        } else {
+                            "Switch to Touch Input"
+                        }
+                    )
+                }
+                Spacer(modifier = Modifier.weight(1f))
+                dismissButton?.invoke()
+                confirmButton()
+            }
+        },
+        modifier = modifier,
+        shape = shape,
+        tonalElevation = tonalElevation,
+        colors = colors,
+        properties = properties,
+        content = {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = 24.dp, end = 12.dp, top = 16.dp, bottom = 24.dp),
+                    text = if (showingPicker.value) {
+                        "Select time"
+                    } else {
+                        "Enter time"
+                    },
+                    style = MaterialTheme.typography.labelLarge
+                )
+                if (showingPicker.value && configuration.screenHeightDp > 400) {
+                    TimePicker(state = state)
+                } else {
+                    TimeInput(state = state)
+                }
+            }
+        }
+    )
+}
+
 
 @Composable
 fun TimeTable(data: List<LunarCalendar.DayData>) {
@@ -326,14 +496,7 @@ fun TimeTableRow(modifier: Modifier = Modifier, data: LunarCalendar.DayData) {
             modifier = Modifier.weight(.8f)
         ) {
             data.timeTable.mapIndexed { index, item ->
-                val signRegex = "[asdfghjklzxc]".toRegex(setOf(RegexOption.MULTILINE, RegexOption.IGNORE_CASE))
-                val signMatch = signRegex.find(item.data)
-                val sign = signMatch?.let { Sign.getByCharCode(it.value) }
-                val itemData = if (sign != null) {
-                    item.data.replace(sign.charCode + " ", "")
-                } else {
-                    item.data
-                }.replaceFirstChar { it.titlecase(Locale.ROOT) }
+                val (itemData, sign) = extractSign(item.data)
 
                 Row(
                     modifier = Modifier
