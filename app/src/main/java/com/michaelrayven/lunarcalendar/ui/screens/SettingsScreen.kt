@@ -60,7 +60,7 @@ fun SettingsScreen(snackbarHostState: SnackbarHostState) {
 
     val scope = rememberCoroutineScope()
 
-    var location = getSavedLocation(context)
+    var location by remember { mutableStateOf(getSavedLocation(context)) }
     val locationPickerState = rememberLocationPickerState(default = location)
 
     Column(
