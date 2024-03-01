@@ -10,6 +10,8 @@ Libraries:
 - Ktor (HTTP Client)
 - Glance (Compose for widgets)
 - Coil (Image loading)
+- Skrape {it} (HTML Parser)
+- Navigation Compose (for screen routing)
 
 Features:
 - [X] Lunar calendar
