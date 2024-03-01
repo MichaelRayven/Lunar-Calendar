@@ -1,7 +1,6 @@
 package com.michaelrayven.lunarcalendar.ui.components
 
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -23,7 +22,6 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import com.michaelrayven.lunarcalendar.R
 import com.michaelrayven.lunarcalendar.navigation.NavigationItem
 import com.michaelrayven.lunarcalendar.types.Location
-import com.michaelrayven.lunarcalendar.util.getCurrentLunarCalendar
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import java.util.Base64

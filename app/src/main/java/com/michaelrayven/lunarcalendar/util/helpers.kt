@@ -40,10 +40,8 @@ fun saveLocation(context: Context, location: Location) {
     }
 }
 
-fun getIntervalFromString(hoursString: String, minutesString: String): Long {
-    val hours = hoursString.toLongOrDefault(0)
-    val minutes = minutesString.toLongOrDefault(0)
-    var interval = ((hours * 60 + minutes) * 60 * 1000)
+fun computeInterval(hours: Int, minutes: Int): Long {
+    var interval = ((hours * 60 + minutes) * 60 * 1000).toLong()
 
     if (interval == 0L) {
         interval = 24 * 60 * 60 * 1000
@@ -52,14 +50,14 @@ fun getIntervalFromString(hoursString: String, minutesString: String): Long {
     return interval
 }
 
-fun saveUpdateInterval(context: Context, hoursString: String, minutesString: String) {
+fun saveUpdateInterval(context: Context, hours: Int, minutes: Int) {
     val preferencesFile = context.getString(R.string.preference_file)
     val preferences = context.getSharedPreferences(preferencesFile, Context.MODE_PRIVATE)
 
     with(preferences.edit()) {
         putLong(
             context.getString(R.string.saved_update_interval),
-            getIntervalFromString(hoursString, minutesString)
+            computeInterval(hours, minutes)
         )
         apply()
     }

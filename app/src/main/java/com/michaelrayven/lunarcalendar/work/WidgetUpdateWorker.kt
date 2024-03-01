@@ -11,7 +11,6 @@ import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import androidx.work.await
-import com.michaelrayven.lunarcalendar.R
 import com.michaelrayven.lunarcalendar.util.cacheLunarCalendar
 import com.michaelrayven.lunarcalendar.util.getCurrentLunarCalendar
 import com.michaelrayven.lunarcalendar.util.getSavedLocation

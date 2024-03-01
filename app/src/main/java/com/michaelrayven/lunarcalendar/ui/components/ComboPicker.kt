@@ -1,7 +1,6 @@
 package com.michaelrayven.lunarcalendar.ui.components
 
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -15,7 +14,6 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
 import com.michaelrayven.lunarcalendar.types.Location
 import com.michaelrayven.lunarcalendar.util.getSavedLocation
 import java.util.Calendar
