@@ -2,6 +2,6 @@
     <string name="app_name">Lunar Calendar</string>
     <string name="preference_file">com.michaelrayven.lunarcalendar.app_settings</string>
     <string name="saved_location">current_location</string>
-    <string name="nav_location">arg_location</string>
+    <string name="saved_calendar">current_calendar</string>
     <string name="saved_update_interval">update_interval</string>
 </resources>

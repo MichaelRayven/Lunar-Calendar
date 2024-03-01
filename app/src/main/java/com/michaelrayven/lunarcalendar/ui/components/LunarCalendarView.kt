@@ -29,6 +29,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.layout.ContentScale
@@ -199,13 +200,18 @@ fun LunarDayInfoRow(
 fun LunarCalendarTableView(calendar: List<LunarCalendar.DayData>) {
     Surface(
         modifier = Modifier
+            .shadow(
+                elevation = 2.dp,
+                shape = RoundedCornerShape(16.dp)
+            )
+            .clip(RoundedCornerShape(16.dp))
             .fillMaxWidth()
-            .background(Color.LightGray.copy(.1f))
-            .clip(RoundedCornerShape(16.dp)),
-        shadowElevation = 8.dp
+
     ) {
         Column(
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 16.dp)
         ) {
             Text(
                 modifier = Modifier.fillMaxWidth(),
@@ -242,9 +248,9 @@ fun LunarCalendarTableView(calendar: List<LunarCalendar.DayData>) {
                 LunarCalendarRow(
                     modifier = Modifier.background(
                         if (index % 2 == 0) {
-                            Color.Gray.copy(.1f)
+                            Color.Gray.copy(.05f)
                         } else {
-                            Color.Gray.copy(.2f)
+                            Color.Unspecified
                         }
                     ),
                     data = item
@@ -287,7 +293,6 @@ fun TimeTable(
     Column(
         modifier = modifier
     ) {
-
         table.mapIndexed { index, item ->
             val (itemData, sign) = extractSign(item.data)
 
@@ -295,31 +300,35 @@ fun TimeTable(
                 modifier = Modifier
                     .background(
                         if (index % 2 == 0) {
-                            Color.Gray.copy(.075f)
-                        } else {
                             Color.Gray.copy(.15f)
+                        } else {
+                            Color.Gray.copy(.05f)
                         }
                     )
-                    .padding(vertical = 4.dp),
+                    .padding(vertical = 4.dp, horizontal = 8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Column(
-                    verticalArrangement = Arrangement.Center,
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text(
+                if (item.time.isNotEmpty()) {
+                    Column(
                         modifier = Modifier
-                            .wrapContentWidth()
-                            .padding(horizontal = 8.dp),
-                        text = item.time
-                    )
-                    if (sign != null) {
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Image(
-                            modifier = Modifier.size(16.dp),
-                            painter = painterResource(sign.iconResId),
-                            contentDescription = sign.name
+                            .padding(end = 8.dp)
+                            .wrapContentWidth(),
+                        verticalArrangement = Arrangement.Center,
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            modifier = Modifier.wrapContentWidth(),
+                            text = item.time
                         )
+
+                        if (sign != null) {
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Image(
+                                modifier = Modifier.size(16.dp),
+                                painter = painterResource(sign.iconResId),
+                                contentDescription = sign.name
+                            )
+                        }
                     }
                 }
 

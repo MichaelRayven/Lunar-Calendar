@@ -3,11 +3,6 @@ package com.michaelrayven.lunarcalendar.widget
 import android.content.Context
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
@@ -46,10 +41,10 @@ import androidx.glance.unit.ColorProvider
 import com.michaelrayven.lunarcalendar.MainActivity
 import com.michaelrayven.lunarcalendar.R
 import com.michaelrayven.lunarcalendar.types.LunarCalendar
-import com.michaelrayven.lunarcalendar.types.Sign
+import com.michaelrayven.lunarcalendar.util.extractSign
+import com.michaelrayven.lunarcalendar.util.getCachedLunarCalendar
 import com.michaelrayven.lunarcalendar.util.getCurrentLunarCalendar
 import com.michaelrayven.lunarcalendar.util.getSavedLocation
-import java.util.Locale
 
 class CalendarWidget : GlanceAppWidget() {
 
@@ -69,14 +64,9 @@ class CalendarWidget : GlanceAppWidget() {
 
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
-        val location = getSavedLocation(context)
+        val lunarCalendar = getCachedLunarCalendar(context) ?: getCurrentLunarCalendar(getSavedLocation(context))
 
         provideContent {
-            var lunarCalendar by remember { mutableStateOf<LunarCalendar?>(null) }
-            LaunchedEffect(location) {
-                lunarCalendar = getCurrentLunarCalendar(location)
-            }
-
             val size = LocalSize.current
 
             Box(
@@ -88,9 +78,9 @@ class CalendarWidget : GlanceAppWidget() {
             ) {
                 if (lunarCalendar != null) {
                     if (size.width >= HORIZONTAL_RECTANGLE.width) {
-                        WidgetDefaultView(size = size,lunarCalendar = lunarCalendar!!)
+                        WidgetDefaultView(size = size, lunarCalendar = lunarCalendar)
                     } else {
-                        WidgetSmallView(size = size, lunarCalendar = lunarCalendar!!)
+                        WidgetSmallView(size = size, lunarCalendar = lunarCalendar)
                     }
                 } else {
                     WidgetLoading()
@@ -135,14 +125,15 @@ class CalendarWidget : GlanceAppWidget() {
             ) {
                 Text(
                     modifier = GlanceModifier.fillMaxWidth(),
-                    text = "${ lunarCalendar.currentDay.lunarDay } лунный день",
+                    text = "${lunarCalendar.currentDay.lunarDay} лунный день",
                     style = TextStyle(
                         fontFamily = FontFamily.SansSerif,
                         fontWeight = FontWeight.Medium,
                         fontSize = 20.sp
                     )
                 )
-                val startedAt = lunarCalendar.currentDay.period.split(Regex("[()]", RegexOption.MULTILINE))[1]
+                val startedAt =
+                    lunarCalendar.currentDay.period.split(Regex("[()]", RegexOption.MULTILINE))[1]
                 Text(
                     modifier = GlanceModifier.fillMaxWidth(),
                     text = "С $startedAt",
@@ -156,7 +147,8 @@ class CalendarWidget : GlanceAppWidget() {
             }
 
             if (size.width >= BIG_SQUARE.width) {
-                val todayTimeTable = lunarCalendar.calendar.find { it.day == lunarCalendar.currentDay.day }?.timeTable
+                val todayTimeTable =
+                    lunarCalendar.calendar.find { it.day == lunarCalendar.currentDay.day }?.timeTable
 
                 todayTimeTable?.let {
                     Spacer(
@@ -172,7 +164,8 @@ class CalendarWidget : GlanceAppWidget() {
 
                     WidgetTimeTable(
                         modifier = GlanceModifier.defaultWeight(),
-                        table = it)
+                        table = it
+                    )
                 }
             }
         }
@@ -187,7 +180,7 @@ class CalendarWidget : GlanceAppWidget() {
         ) {
             Text(
                 modifier = GlanceModifier.wrapContentSize(),
-                text = "${ lunarCalendar.currentDay.lunarDay }",
+                text = "${lunarCalendar.currentDay.lunarDay}",
                 style = TextStyle(
                     fontFamily = FontFamily.SansSerif,
                     fontWeight = FontWeight.Bold,
@@ -207,7 +200,8 @@ class CalendarWidget : GlanceAppWidget() {
             Spacer(
                 modifier = GlanceModifier.height(8.dp)
             )
-            val startedAt = lunarCalendar.currentDay.period.split(Regex("[()]", RegexOption.MULTILINE))[1]
+            val startedAt =
+                lunarCalendar.currentDay.period.split(Regex("[()]", RegexOption.MULTILINE))[1]
             Text(
                 modifier = GlanceModifier.wrapContentSize(),
                 text = "С $startedAt",
@@ -221,105 +215,110 @@ class CalendarWidget : GlanceAppWidget() {
             )
         }
     }
+}
 
-    @Composable
-    private fun WidgetTimeTable(
-        modifier: GlanceModifier = GlanceModifier,
-        table: List<LunarCalendar.TimeData>
+@Composable
+fun WidgetTimeTable(
+    modifier: GlanceModifier = GlanceModifier,
+    table: List<LunarCalendar.TimeData>
+) {
+    Column(
+        modifier = modifier.fillMaxWidth()
     ) {
-        Column(
-            modifier = modifier.fillMaxWidth()
+        Row(
+            modifier = GlanceModifier
+                .fillMaxWidth()
+                .height(32.dp)
+                .padding(4.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Row(
-                modifier = GlanceModifier
-                    .fillMaxWidth()
-                    .height(32.dp)
-                    .padding(4.dp),
-                verticalAlignment = Alignment.CenterVertically
+            Text(
+                modifier = GlanceModifier.width(40.dp),
+                text = "Время:",
+                style = TextStyle(
+                    fontWeight = FontWeight.Bold,
+                    fontFamily = FontFamily.SansSerif,
+                    fontSize = 12.sp,
+                )
+            )
+
+            Spacer(
+                modifier = GlanceModifier.width(8.dp)
+            )
+
+            Text(
+                modifier = GlanceModifier.defaultWeight(),
+                text = "Лунный день, знак, фаза:",
+                style = TextStyle(
+                    fontWeight = FontWeight.Bold,
+                    fontFamily = FontFamily.SansSerif,
+                    fontSize = 12.sp,
+                )
+            )
+        }
+        table.mapIndexed { index, item ->
+            WidgetTimeTableRow(
+                modifier = GlanceModifier.background(
+                    if (index % 2 == 0) {
+                        Color.Gray.copy(.1f)
+                    } else {
+                        Color.Gray.copy(.2f)
+                    }
+                ),
+                time = item.time,
+                data = item.data
+            )
+        }
+    }
+}
+
+@Composable
+fun WidgetTimeTableRow(
+    modifier: GlanceModifier = GlanceModifier,
+    time: String,
+    data: String
+) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(4.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        val (text, sign) = extractSign(data)
+
+        if (time.isNotEmpty()) {
+            Column(
+                modifier = GlanceModifier.padding(end = 12.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
-                    modifier = GlanceModifier.width(40.dp),
-                    text = "Время:",
+                    modifier = GlanceModifier.wrapContentWidth(),
+                    text = time,
                     style = TextStyle(
                         fontWeight = FontWeight.Medium,
-                        fontFamily = FontFamily.SansSerif,
-                        fontSize = 12.sp,
+                        fontFamily = FontFamily.SansSerif
                     )
                 )
 
-                Spacer(
-                    modifier = GlanceModifier.width(8.dp)
-                )
 
-                Spacer(
-                    modifier = GlanceModifier.width(8.dp)
-                )
-
-                Text(
-                    modifier = GlanceModifier.defaultWeight(),
-                    text = "Лунный день, знак, фаза:",
-                    style = TextStyle(
-                        fontWeight = FontWeight.Medium,
-                        fontFamily = FontFamily.SansSerif,
-                        fontSize = 12.sp,
+                if (sign != null) {
+                    Spacer(modifier = GlanceModifier.height(4.dp))
+                    Image(
+                        modifier = GlanceModifier.size(16.dp),
+                        provider = ImageProvider(sign.iconResId),
+                        contentDescription = sign.name
                     )
-                )
-            }
-            table.mapIndexed { index, item ->
-                Row(
-                    modifier = GlanceModifier
-                        .fillMaxWidth()
-                        .background(Color.Gray.copy(
-                            if (index % 2 == 0) .1f else .2f
-                        ))
-                        .padding(4.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        modifier = GlanceModifier.wrapContentWidth(),
-                        text = item.time,
-                        style = TextStyle(
-                            fontWeight = FontWeight.Medium,
-                            fontFamily = FontFamily.SansSerif
-                        )
-                    )
-
-                    Spacer(
-                        modifier = GlanceModifier.width(16.dp)
-                    )
-
-                    val signRegex = "[asdfghjklzxc]".toRegex(setOf(RegexOption.MULTILINE, RegexOption.IGNORE_CASE))
-                    val signMatch = signRegex.find(item.data)
-                    val sign = signMatch?.let { Sign.getByCharCode(it.value) }
-
-                    if (sign != null) {
-                        Image(
-                            modifier = GlanceModifier.size(20.dp),
-                            provider = ImageProvider(sign.iconResId),
-                            contentDescription = sign.name
-                        )
-                        Spacer(
-                            modifier = GlanceModifier.width(8.dp)
-                        )
-                        Text(
-                            modifier = GlanceModifier.defaultWeight(),
-                            text = item.data.replace(sign.charCode + " ", "")
-                                .replaceFirstChar { it.titlecase(Locale.ROOT) },
-                            style = TextStyle(
-                                fontFamily = FontFamily.SansSerif
-                            )
-                        )
-                    } else {
-                        Text(
-                            modifier = GlanceModifier.defaultWeight(),
-                            text = item.data.replaceFirstChar { it.titlecase(Locale.ROOT) },
-                            style = TextStyle(
-                                fontFamily = FontFamily.SansSerif
-                            )
-                        )
-                    }
                 }
             }
         }
+
+        Text(
+            modifier = GlanceModifier.defaultWeight(),
+            text = text,
+            style = TextStyle(
+                fontFamily = FontFamily.SansSerif
+            )
+        )
     }
 }

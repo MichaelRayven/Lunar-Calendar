@@ -1,7 +1,6 @@
 package com.michaelrayven.lunarcalendar
 
 import LunarCalendarScreen
-import android.content.Context
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -46,11 +45,10 @@ import com.michaelrayven.lunarcalendar.ui.components.ContextDropdownMenu
 import com.michaelrayven.lunarcalendar.ui.screens.HomeScreen
 import com.michaelrayven.lunarcalendar.ui.screens.SettingsScreen
 import com.michaelrayven.lunarcalendar.ui.theme.LunarCalendarTheme
-import com.michaelrayven.lunarcalendar.util.parseLocationOrSaved
 import com.michaelrayven.lunarcalendar.work.WidgetUpdateWorker.Companion.scheduleWidgetUpdates
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
-import java.time.Instant
+import java.util.Base64
 
 class MainActivity : ComponentActivity() {
     @OptIn(ExperimentalMaterial3Api::class)
@@ -62,10 +60,6 @@ class MainActivity : ComponentActivity() {
             val scrollBehavior =
                 TopAppBarDefaults.enterAlwaysScrollBehavior(rememberTopAppBarState())
             val snackbarHostState = remember { SnackbarHostState() }
-
-            val context = applicationContext
-            val preferencesFile = context.getString(R.string.preference_file)
-            val preferences = context.getSharedPreferences(preferencesFile, Context.MODE_PRIVATE)
 
             LaunchedEffect(true) {
                 scheduleWidgetUpdates(applicationContext)
@@ -106,20 +100,9 @@ class MainActivity : ComponentActivity() {
                             },
                             onSelected = { location: Location, timestamp: Long ->
                                 showDateTimePicker = false
-                                with(preferences.edit()) {
-                                    putString(
-                                        context.getString(R.string.nav_location),
-                                        Json.encodeToString(location)
-                                    )
-                                    apply()
-                                }
-                                navController.navigate(
-                                    NavigationItem.Calendar.route + "/${
-                                        context.getString(
-                                            R.string.nav_location
-                                        )
-                                    }/${timestamp}"
-                                )
+
+                                val locationEncoded = Base64.getUrlEncoder().encodeToString(Json.encodeToString(location).toByteArray())
+                                navController.navigate(NavigationItem.Calendar.route + "/$locationEncoded/$timestamp")
                             },
                             expanded = showDateTimePicker
                         )
@@ -147,15 +130,12 @@ class MainActivity : ComponentActivity() {
                             HomeScreen(navController, snackbarHostState)
                         }
                         composable(
-                            NavigationItem.Calendar.route + "/{key}/{timestamp}",
+                            NavigationItem.Calendar.route + "/{location}/{timestamp}",
                         ) { backStackEntry ->
-                            val location = parseLocationOrSaved(
-                                applicationContext,
-                                backStackEntry.arguments?.getString("key")
+                            val (location, timestamp) = NavigationItem.Calendar.processDestinationArgs(
+                                context = applicationContext,
+                                args = backStackEntry.arguments
                             )
-                            val timestamp =
-                                backStackEntry.arguments?.getString("timestamp")?.toLong()
-                                    ?: Instant.now().toEpochMilli()
 
                             LunarCalendarScreen(
                                 location,

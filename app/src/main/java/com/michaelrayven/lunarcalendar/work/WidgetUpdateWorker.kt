@@ -12,6 +12,9 @@ import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import androidx.work.await
 import com.michaelrayven.lunarcalendar.R
+import com.michaelrayven.lunarcalendar.util.cacheLunarCalendar
+import com.michaelrayven.lunarcalendar.util.getCurrentLunarCalendar
+import com.michaelrayven.lunarcalendar.util.getSavedLocation
 import com.michaelrayven.lunarcalendar.widget.CalendarWidget
 import java.util.concurrent.TimeUnit
 
@@ -20,6 +23,10 @@ class WidgetUpdateWorker(
     private val params: WorkerParameters
 ) : CoroutineWorker(appContext, params) {
     override suspend fun doWork(): Result {
+        val lunarCalendar = getCurrentLunarCalendar(getSavedLocation(appContext)) ?: return Result.failure()
+
+        cacheLunarCalendar(appContext, lunarCalendar)
+
         return try {
             CalendarWidget().updateAll(appContext)
             Result.success()
@@ -42,6 +49,7 @@ class WidgetUpdateWorker(
         fun scheduleWidgetUpdates(context: Context): Operation {
             val preferencesFile = context.getString(R.string.preference_file)
             val preferences = context.getSharedPreferences(preferencesFile, Context.MODE_PRIVATE)
+
             val (hours, minutes) = preferences
                 .getString(context.getString(R.string.saved_update_interval), "00:00")!!
                 .split(":")

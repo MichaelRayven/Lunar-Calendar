@@ -6,6 +6,7 @@ import com.michaelrayven.lunarcalendar.remote.AppClient
 import com.michaelrayven.lunarcalendar.types.Location
 import com.michaelrayven.lunarcalendar.types.LunarCalendar
 import com.michaelrayven.lunarcalendar.types.Sign
+import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import java.text.DecimalFormat
 import java.util.Calendar
@@ -22,19 +23,6 @@ fun getSavedLocation(context: Context): Location {
         )
     } catch (e: IllegalArgumentException) {
         Location.DEFAULT
-    }
-}
-
-fun parseLocationOrSaved(context: Context, key: String? = ""): Location {
-    val preferencesFile = context.getString(R.string.preference_file)
-    val preferences = context.getSharedPreferences(preferencesFile, Context.MODE_PRIVATE)
-
-    return try {
-        Json.decodeFromString<Location>(
-            preferences.getString(key, null) ?: ""
-        )
-    } catch (e: IllegalArgumentException) {
-        getSavedLocation(context)
     }
 }
 
@@ -60,11 +48,13 @@ fun formatInterval(interval: String): String {
 
 suspend fun getCurrentLunarCalendar(location: Location, timestamp: Long? = null): LunarCalendar? {
     val client = AppClient()
-    val calendar = Calendar.getInstance(TimeZone.getTimeZone(location.timeZone))
+    val calendar = Calendar.getInstance()
 
-    timestamp?.let {
-        calendar.timeZone = TimeZone.getDefault()
+    if (timestamp != null) {
+        calendar.timeZone = TimeZone.getTimeZone("UTC")
         calendar.timeInMillis = timestamp
+    } else {
+        calendar.timeZone = TimeZone.getTimeZone(location.timeZone)
     }
 
     val day = calendar.get(Calendar.DAY_OF_MONTH)
@@ -74,6 +64,29 @@ suspend fun getCurrentLunarCalendar(location: Location, timestamp: Long? = null)
     val minute = calendar.get(Calendar.MINUTE)
 
     return client.getLunarCalendar(location, day, month, year, hour, minute)
+}
+
+fun cacheLunarCalendar(context: Context, lunarCalendar: LunarCalendar) {
+    val preferencesFile = context.getString(R.string.preference_file)
+    val preferences = context.getSharedPreferences(preferencesFile, Context.MODE_PRIVATE)
+    val key = context.getString(R.string.saved_calendar)
+
+    with (preferences.edit()) {
+        putString(key, Json.encodeToString(lunarCalendar))
+        apply()
+    }
+}
+
+fun getCachedLunarCalendar(context: Context): LunarCalendar? {
+    val preferencesFile = context.getString(R.string.preference_file)
+    val preferences = context.getSharedPreferences(preferencesFile, Context.MODE_PRIVATE)
+    val key = context.getString(R.string.saved_calendar)
+
+    return try {
+        Json.decodeFromString<LunarCalendar>(preferences.getString(key, null) ?: "")
+    } catch (e: IllegalArgumentException) {
+        return null
+    }
 }
 
 fun getMonthByName(name: String): Int {
