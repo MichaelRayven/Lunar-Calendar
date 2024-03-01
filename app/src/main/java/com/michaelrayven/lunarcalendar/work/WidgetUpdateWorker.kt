@@ -15,6 +15,7 @@ import com.michaelrayven.lunarcalendar.R
 import com.michaelrayven.lunarcalendar.util.cacheLunarCalendar
 import com.michaelrayven.lunarcalendar.util.getCurrentLunarCalendar
 import com.michaelrayven.lunarcalendar.util.getSavedLocation
+import com.michaelrayven.lunarcalendar.util.getSavedUpdateInterval
 import com.michaelrayven.lunarcalendar.widget.CalendarWidget
 import java.util.concurrent.TimeUnit
 
@@ -47,21 +48,13 @@ class WidgetUpdateWorker(
         }
 
         fun scheduleWidgetUpdates(context: Context): Operation {
-            val preferencesFile = context.getString(R.string.preference_file)
-            val preferences = context.getSharedPreferences(preferencesFile, Context.MODE_PRIVATE)
+            val minInterval = 15 * 60 * 1000L
+            val interval = getSavedUpdateInterval(context).coerceAtLeast(minInterval)
 
-            val (hours, minutes) = preferences
-                .getString(context.getString(R.string.saved_update_interval), "00:00")!!
-                .split(":")
-                .map { it.toInt() }
-
-            var duration: Long = (hours * 60 + minutes).toLong()
-
-            if (duration == 0.toLong()) {
-                duration = 24 * 60
-            }
-
-            val widgetUpdateRequest = PeriodicWorkRequestBuilder<WidgetUpdateWorker>(duration.coerceAtLeast(15), TimeUnit.MINUTES)
+            val widgetUpdateRequest = PeriodicWorkRequestBuilder<WidgetUpdateWorker>(
+                interval,
+                TimeUnit.MILLISECONDS
+            )
                 .addTag(UPDATE_WIDGET_TAG)
                 .build()
             val workManger = WorkManager

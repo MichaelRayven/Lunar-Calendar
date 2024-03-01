@@ -25,7 +25,7 @@ import androidx.compose.ui.unit.dp
 fun <T> ContextDropdownMenu(
     items: List<T>,
     onItemClick: (index: Int, item: T) -> Unit,
-    drawItem: @Composable (index: Int,  item: T, onClick: () -> Unit) -> Unit = { index, item, onClick ->
+    drawItem: @Composable (item: T, onClick: () -> Unit) -> Unit = { item, onClick ->
         DropdownMenuItem(
             text = {
                 Text(
@@ -36,30 +36,22 @@ fun <T> ContextDropdownMenu(
             onClick = onClick
         )
     },
-    actionIcon: @Composable () -> Unit = {
-        Icon(
-            imageVector = Icons.Default.MoreVert,
-            contentDescription = "More"
-        )
-    }
+    actionIcon: @Composable () -> Unit,
+    expanded: Boolean,
+    onDismissRequest: () -> Unit
 ) {
-    var expanded by remember { mutableStateOf(false) }
-
     Box(
         modifier = Modifier.wrapContentSize(Alignment.TopEnd)
     ) {
-        IconButton(onClick = { expanded = !expanded }) {
-            actionIcon()
-        }
+        actionIcon()
 
         DropdownMenu(
             expanded = expanded,
-            onDismissRequest = { expanded = false }
+            onDismissRequest = onDismissRequest
         ) {
             items.mapIndexed { index, item ->
-                drawItem(index, item) {
+                drawItem(item) {
                     onItemClick(index, item)
-                    expanded = false
                 }
 
                 if (index < items.lastIndex) {

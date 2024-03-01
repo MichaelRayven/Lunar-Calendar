@@ -8,6 +8,7 @@ import com.michaelrayven.lunarcalendar.types.LunarCalendar
 import com.michaelrayven.lunarcalendar.types.Sign
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import okhttp3.internal.toLongOrDefault
 import java.text.DecimalFormat
 import java.util.Calendar
 import java.util.Locale
@@ -26,6 +27,54 @@ fun getSavedLocation(context: Context): Location {
     }
 }
 
+fun saveLocation(context: Context, location: Location) {
+    val preferencesFile = context.getString(R.string.preference_file)
+    val preferences = context.getSharedPreferences(preferencesFile, Context.MODE_PRIVATE)
+
+    with(preferences.edit()) {
+        putString(
+            context.getString(R.string.saved_location),
+            Json.encodeToString(location)
+        )
+        apply()
+    }
+}
+
+fun getIntervalFromString(hoursString: String, minutesString: String): Long {
+    val hours = hoursString.toLongOrDefault(0)
+    val minutes = minutesString.toLongOrDefault(0)
+    var interval = ((hours * 60 + minutes) * 60 * 1000)
+
+    if (interval == 0L) {
+        interval = 24 * 60 * 60 * 1000
+    }
+
+    return interval
+}
+
+fun saveUpdateInterval(context: Context, hoursString: String, minutesString: String) {
+    val preferencesFile = context.getString(R.string.preference_file)
+    val preferences = context.getSharedPreferences(preferencesFile, Context.MODE_PRIVATE)
+
+    with(preferences.edit()) {
+        putLong(
+            context.getString(R.string.saved_update_interval),
+            getIntervalFromString(hoursString, minutesString)
+        )
+        apply()
+    }
+}
+
+fun getSavedUpdateInterval(context: Context): Long {
+    val preferencesFile = context.getString(R.string.preference_file)
+    val preferences = context.getSharedPreferences(preferencesFile, Context.MODE_PRIVATE)
+
+    return preferences.getLong(
+        context.getString(R.string.saved_update_interval),
+        24 * 60 * 60 * 1000
+    )
+}
+
 fun formatGmt(gmt: Float): String {
     val format = DecimalFormat("0.#")
 
@@ -35,9 +84,10 @@ fun formatGmt(gmt: Float): String {
         "GMT ${format.format(gmt)}"
 }
 
-fun formatInterval(interval: String): String {
-    val (hours, minutes) = interval.split(":").map { it.toInt() }
-    return if (hours == 0 && minutes == 0) {
+fun formatInterval(interval: Long): String {
+    val hours = (interval / 1000 / 60 / 60) % 24
+    val minutes = (interval / 1000 / 60) % 60
+    return if (hours == 0L && minutes == 0L) {
         "раз в день"
     } else {
         val minuteString = if (minutes > 0) "$minutes минут" else ""

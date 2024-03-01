@@ -4,6 +4,7 @@ import LunarCalendarScreen
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
@@ -29,6 +30,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.painterResource
@@ -51,14 +54,11 @@ import kotlinx.serialization.json.Json
 import java.util.Base64
 
 class MainActivity : ComponentActivity() {
-    @OptIn(ExperimentalMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         setContent {
             val navController = rememberNavController()
-            val scrollBehavior =
-                TopAppBarDefaults.enterAlwaysScrollBehavior(rememberTopAppBarState())
             val snackbarHostState = remember { SnackbarHostState() }
 
             LaunchedEffect(true) {
@@ -66,140 +66,36 @@ class MainActivity : ComponentActivity() {
             }
 
             LunarCalendarTheme {
-                Scaffold(
-                    modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
-                    snackbarHost = {
-                        SnackbarHost(hostState = snackbarHostState)
-                    },
-                    topBar = {
-                        TopAppBar(
-                            colors = topAppBarColors(
-                                containerColor = MaterialTheme.colorScheme.primaryContainer,
-                                titleContentColor = MaterialTheme.colorScheme.primary,
-                            ),
-                            title = {
-                                Text(
-                                    text = "Lunar Calendar",
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
-                                )
-                            },
-                            navigationIcon = { },
-                            actions = { TopBarDropdownMenu(navController) },
-                            scrollBehavior = scrollBehavior,
-                        )
-                    },
-                    floatingActionButton = {
-                        var showDateTimePicker by remember {
-                            mutableStateOf(false)
-                        }
-
-                        ComboPicker(
-                            onDismissRequest = {
-                                showDateTimePicker = false
-                            },
-                            onSelected = { location: Location, timestamp: Long ->
-                                showDateTimePicker = false
-
-                                val locationEncoded = Base64.getUrlEncoder().encodeToString(Json.encodeToString(location).toByteArray())
-                                navController.navigate(NavigationItem.Calendar.route + "/$locationEncoded/$timestamp")
-                            },
-                            expanded = showDateTimePicker
-                        )
-
-                        val navBackStackEntry by navController.currentBackStackEntryAsState()
-
-                        if (navBackStackEntry?.destination?.route != NavigationItem.Settings.route) {
-                            FloatingActionButton(onClick = { showDateTimePicker = true }) {
-                                Icon(
-                                    painter = painterResource(id = R.drawable.baseline_edit_calendar_24),
-                                    contentDescription = ""
-                                )
-                            }
-                        }
+                NavHost(
+                    modifier = Modifier.fillMaxSize(),
+                    navController = navController,
+                    startDestination = NavigationItem.Home.route
+                ) {
+                    composable(NavigationItem.Home.route) {
+                        HomeScreen(navController, snackbarHostState)
                     }
-                ) { innerPadding ->
-                    NavHost(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(innerPadding),
-                        navController = navController,
-                        startDestination = NavigationItem.Home.route
-                    ) {
-                        composable(NavigationItem.Home.route) {
-                            HomeScreen(navController, snackbarHostState)
-                        }
-                        composable(
-                            NavigationItem.Calendar.route + "/{location}/{timestamp}",
-                        ) { backStackEntry ->
-                            val (location, timestamp) = NavigationItem.Calendar.processDestinationArgs(
-                                context = applicationContext,
-                                args = backStackEntry.arguments
-                            )
+                    composable(
+                        NavigationItem.Calendar.routeWithArgs,
+                    ) { backStackEntry ->
+                        val (location, timestamp) = NavigationItem.Calendar.processDestinationArgs(
+                            context = applicationContext,
+                            args = backStackEntry.arguments
+                        )
 
-                            LunarCalendarScreen(
-                                location,
-                                timestamp,
-                                navController,
-                                snackbarHostState
-                            )
-                        }
-                        composable(NavigationItem.Settings.route) {
-                            SettingsScreen(navController, snackbarHostState)
-                        }
+                        LunarCalendarScreen(
+                            location,
+                            timestamp,
+                            navController,
+                            snackbarHostState
+                        )
+                    }
+                    composable(NavigationItem.Settings.route) {
+                        SettingsScreen(navController, snackbarHostState)
                     }
                 }
             }
         }
     }
 
-    data class TopBarItem(
-        val name: String,
-        val route: String,
-        val icon: ImageVector
-    )
 
-    @Composable
-    fun TopBarDropdownMenu(
-        navController: NavController
-    ) {
-        val items = listOf(
-            TopBarItem(
-                name = "Главная",
-                route = "home",
-                icon = Icons.Filled.Home
-            ),
-            TopBarItem(
-                name = "Настройки",
-                route = "settings",
-                icon = Icons.Filled.Settings
-            )
-        )
-
-        ContextDropdownMenu(
-            items = items,
-            drawItem = { _, item, onClick ->
-                val currentRoute = navController.currentBackStackEntry?.destination?.route
-                DropdownMenuItem(
-                    enabled = currentRoute != item.route,
-                    text = {
-                        Text(
-                            text = item.name,
-                            style = MaterialTheme.typography.titleSmall
-                        )
-                    },
-                    leadingIcon = {
-                        Icon(
-                            imageVector = item.icon,
-                            contentDescription = "Item's Icon"
-                        )
-                    },
-                    onClick = onClick
-                )
-            },
-            onItemClick = { _, item ->
-                navController.navigate(item.route)
-            }
-        )
-    }
 }

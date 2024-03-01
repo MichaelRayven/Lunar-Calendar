@@ -76,11 +76,12 @@ fun TimePickerDialog(
                         .fillMaxWidth()
                         .padding(start = 24.dp, end = 12.dp, top = 16.dp, bottom = 24.dp),
                     text = if (showingPicker.value) {
-                        "Select time"
+                        "Выберите время"
                     } else {
-                        "Enter time"
+                        "Введите время"
                     },
-                    style = MaterialTheme.typography.labelLarge
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.secondary
                 )
                 if (showingPicker.value && configuration.screenHeightDp > 400) {
                     TimePicker(state = state)

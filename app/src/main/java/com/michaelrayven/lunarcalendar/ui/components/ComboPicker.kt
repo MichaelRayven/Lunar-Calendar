@@ -109,9 +109,7 @@ fun ComboPicker(
                 },
             ) {
                 Text(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 24.dp),
+                    modifier = Modifier.fillMaxWidth(),
                     text = "Выбраная локация: ${
                         locationPickerState.value?.displayName ?: listOfNotNull(
                             locationPickerState.country?.name,

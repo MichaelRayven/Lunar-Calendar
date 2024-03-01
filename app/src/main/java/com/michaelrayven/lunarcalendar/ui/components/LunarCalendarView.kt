@@ -200,13 +200,9 @@ fun LunarDayInfoRow(
 fun LunarCalendarTableView(calendar: List<LunarCalendar.DayData>) {
     Surface(
         modifier = Modifier
-            .shadow(
-                elevation = 2.dp,
-                shape = RoundedCornerShape(16.dp)
-            )
-            .clip(RoundedCornerShape(16.dp))
-            .fillMaxWidth()
-
+            .fillMaxWidth(),
+        shadowElevation = 4.dp,
+        shape = RoundedCornerShape(12.dp),
     ) {
         Column(
             modifier = Modifier

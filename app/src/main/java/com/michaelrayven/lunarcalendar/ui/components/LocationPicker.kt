@@ -1,5 +1,6 @@
 package com.michaelrayven.lunarcalendar.ui.components
 
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -40,7 +41,10 @@ class LocationPickerState(
 fun rememberLocationPickerState(default: Location? = null) = remember { LocationPickerState(default) }
 
 @Composable
-fun LocationPicker(state: LocationPickerState) {
+fun LocationPicker(
+    modifier: Modifier = Modifier,
+    state: LocationPickerState
+) {
     val client = AppClient()
 
     var statesList by rememberSaveable { mutableStateOf(emptyList<State>()) }
@@ -91,7 +95,7 @@ fun LocationPicker(state: LocationPickerState) {
     }
 
     Column(
-        modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp),
+        modifier = modifier.padding(vertical = 8.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
 
@@ -163,9 +167,15 @@ fun LocationPickerDialog(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(start = 24.dp, end = 12.dp, top = 16.dp, bottom = 24.dp),
-            text = "Select location",
-            style = MaterialTheme.typography.labelLarge
+            text = "Выберите локацию",
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.secondary
         )
-        content()
+
+        Column(
+            modifier = Modifier.padding(horizontal = 24.dp)
+        ) {
+            content()
+        }
     }
 }
