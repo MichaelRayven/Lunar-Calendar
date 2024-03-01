@@ -2,7 +2,6 @@ package com.michaelrayven.lunarcalendar.ui.screens
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -33,9 +32,9 @@ import com.michaelrayven.lunarcalendar.ui.components.AppScaffold
 import com.michaelrayven.lunarcalendar.ui.components.LocationPicker
 import com.michaelrayven.lunarcalendar.ui.components.TimePickerDialog
 import com.michaelrayven.lunarcalendar.ui.components.rememberLocationPickerState
+import com.michaelrayven.lunarcalendar.util.computeInterval
 import com.michaelrayven.lunarcalendar.util.formatGmt
 import com.michaelrayven.lunarcalendar.util.formatInterval
-import com.michaelrayven.lunarcalendar.util.computeInterval
 import com.michaelrayven.lunarcalendar.util.getSavedLocation
 import com.michaelrayven.lunarcalendar.util.getSavedUpdateInterval
 import com.michaelrayven.lunarcalendar.util.saveLocation

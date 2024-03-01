@@ -8,7 +8,6 @@ import com.michaelrayven.lunarcalendar.types.LunarCalendar
 import com.michaelrayven.lunarcalendar.types.Sign
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
-import okhttp3.internal.toLongOrDefault
 import java.text.DecimalFormat
 import java.util.Calendar
 import java.util.Locale
